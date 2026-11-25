@@ -120,3 +120,106 @@ section {
 button:disabled {
   cursor: default;
 }
+
+.desenho-forca {
+  display: block;
+  width: min(240px, 100%);
+  height: auto;
+  margin: 8px auto;
+  color: #ffd700;
+}
+
+select {
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #2b2b2b;
+  color: white;
+  font: inherit;
+}
+
+select:focus-visible {
+  outline: 2px solid #ffd700;
+  outline-offset: 3px;
+}
+
+.painel-forca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.detalhe-svg {
+  margin: 8px 0;
+  color: #ccc;
+}
+
+.detalhe-svg summary {
+  padding: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.selecao-dificuldade {
+  width: 100%;
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+}
+
+.selecao-dificuldade legend {
+  width: 100%;
+  margin-bottom: 16px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.opcoes-dificuldade {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+button.nivel {
+  display: flex;
+  flex: 1 1 140px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 180px;
+  min-height: 92px;
+  padding: 16px 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  transition: border-color 150ms, transform 150ms;
+}
+
+.nivel span {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+button.nivel-facil {
+  background: #086044;
+}
+
+button.nivel-medio {
+  background: #755500;
+}
+
+button.nivel-dificil {
+  background: #862c34;
+}
+
+button.nivel.selecionado {
+  border-color: white;
+  transform: translateY(-3px);
+}
+
+button.nivel:disabled {
+  opacity: 0.55;
+}

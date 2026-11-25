@@ -1,5 +1,12 @@
 import type { EstadoPartida, ItemRanking } from '../types';
 
+export type Dificuldade = 'facil' | 'medio' | 'dificil';
+
+export interface RespostaDica {
+  partida: EstadoPartida;
+  dica: string;
+}
+
 async function requisitar<T>(
   caminho: string,
   opcoes?: RequestInit,
@@ -36,28 +43,35 @@ async function requisitar<T>(
   return corpo as T;
 }
 
+function enviar<T>(caminho: string, corpo: unknown): Promise<T> {
+  return requisitar<T>(caminho, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo),
+  });
+}
+
 export const api = {
-  novaPartida(jogador: string): Promise<EstadoPartida> {
-    return requisitar<EstadoPartida>('/api/partidas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jogador }),
-    });
+  novaPartida(
+    jogador: string,
+    dificuldade: Dificuldade,
+  ): Promise<EstadoPartida> {
+    return enviar('/api/partidas', { jogador, dificuldade });
   },
 
   consultarPartida(id: number): Promise<EstadoPartida> {
-    return requisitar<EstadoPartida>(`/api/partidas/${id}`);
+    return requisitar(`/api/partidas/${id}`);
   },
 
   palpitar(id: number, letra: string): Promise<EstadoPartida> {
-    return requisitar<EstadoPartida>(`/api/partidas/${id}/palpites`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ letra }),
-    });
+    return enviar(`/api/partidas/${id}/palpites`, { letra });
+  },
+
+  dica(id: number): Promise<RespostaDica> {
+    return enviar(`/api/partidas/${id}/dica`, {});
   },
 
   ranking(): Promise<ItemRanking[]> {
-    return requisitar<ItemRanking[]>('/api/ranking');
+    return requisitar('/api/ranking');
   },
 };

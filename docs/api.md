@@ -7,7 +7,7 @@ A API roda em http://localhost:3333/api.
 As requisições com corpo usam JSON e o cabeçalho
 Content-Type: application/json.
 
-As respostas de erro têm o formato:
+As respostas de erro possuem o formato:
 
 ```json
 {
@@ -15,20 +15,36 @@ As respostas de erro têm o formato:
 }
 ```
 
+Os IDs, as palavras e as datas dos exemplos são ilustrativos.
+
 ## Criar uma partida
 
-Método POST no caminho `/api/partidas`.
+Método POST no caminho /api/partidas.
 
-O apelido deve ter de 3 a 20 caracteres após a remoção dos
-espaços das pontas.
+O apelido deve ter de 3 a 20 caracteres após a remoção
+dos espaços das pontas.
+
+O campo dificuldade é opcional.
 
 ### Corpo da requisição
 
 ```json
 {
-  "jogador": "Erik"
+  "jogador": "Erik",
+  "dificuldade": "facil"
 }
 ```
+
+### Dificuldades aceitas
+
+| Valor | Comprimento |
+|---|---|
+| facil | Até 6 letras |
+| medio | De 7 a 9 letras |
+| dificil | 10 letras ou mais |
+
+Quando dificuldade é omitida, o sorteio considera as palavras
+cadastradas independentemente do comprimento.
 
 ### Resposta de sucesso
 
@@ -52,15 +68,17 @@ Status 201 Created.
 
 | Status | Quando acontece |
 |---|---|
-| 400 | Apelido ausente, com tipo inválido ou fora do tamanho permitido |
+| 400 | Apelido ausente, de tipo inválido ou fora do tamanho permitido |
+| 400 | Dificuldade inválida |
 | 400 | Corpo com JSON inválido |
-| 500 | Falha interna ou banco sem palavras cadastradas |
+| 503 | Nenhuma palavra disponível para o sorteio |
+| 500 | Falha interna |
 
 ## Consultar uma partida
 
-Método GET no caminho `/api/partidas/:id`.
+Método GET no caminho /api/partidas/:id.
 
-O parâmetro `id` identifica a partida.
+O parâmetro id identifica a partida.
 
 ### Exemplo de requisição
 
@@ -90,12 +108,12 @@ Status 200 OK.
 
 | Status | Quando acontece |
 |---|---|
-| 404 | ID inexistente ou inválido |
-| 500 | Falha interna ao consultar a partida |
+| 404 | ID inválido ou inexistente |
+| 500 | Falha interna |
 
 ## Enviar um palpite
 
-Método POST no caminho `/api/partidas/:id/palpites`.
+Método POST no caminho /api/partidas/:id/palpites.
 
 O corpo deve conter exatamente uma letra de A a Z.
 Letras minúsculas são convertidas para maiúsculas.
@@ -128,11 +146,10 @@ Status 200 OK.
 
 Um acerto revela todas as ocorrências da letra.
 Uma letra errada consome uma vida.
-A partida começa com 6 vidas.
 
 ### Exemplo de vitória
 
-Após acertar A, J e V na palavra JAVA, sem erros:
+Ao acertar A, J e V na palavra JAVA, sem erros e sem dica:
 
 ```json
 {
@@ -148,31 +165,85 @@ Após acertar A, J e V na palavra JAVA, sem erros:
 }
 ```
 
-Na vitória, os pontos são calculados por:
+A pontuação da vitória é:
 
 vidas restantes × 10 + letras distintas da palavra × 5
 
-Na derrota, os pontos são zero. Ao chegar a zero vidas,
-o status passa para `derrota` e o campo `palavra` revela a resposta.
+A derrota ocorre quando as vidas chegam a zero.
+Nesse caso, o status passa para derrota, os pontos são zero
+e o campo palavra revela a resposta.
 
 ### Erros
 
 | Status | Quando acontece |
 |---|---|
-| 400 | Letra ausente, com tipo inválido ou diferente de uma única letra de A a Z |
+| 400 | Letra ausente, de tipo inválido ou diferente de uma única letra de A a Z |
 | 400 | Corpo com JSON inválido |
-| 404 | ID inexistente ou inválido |
+| 404 | ID inválido ou inexistente |
 | 409 | Letra já tentada |
-| 409 | Partida já encerrada |
-| 500 | Falha interna ao processar o palpite |
+| 409 | Partida encerrada |
+| 500 | Falha interna |
 
 Uma tentativa rejeitada preserva o estado da partida.
 
-## Consultar o ranking
+## Solicitar dica
 
-Método GET no caminho `/api/ranking`.
+Método POST no caminho /api/partidas/:id/dica.
 
-Retorna até 10 vitórias, ordenadas pela maior pontuação.
+A interface envia um objeto JSON vazio.
+
+### Corpo da requisição
+
+```json
+{}
+```
+
+### Resposta de sucesso
+
+Status 200 OK.
+
+```json
+{
+  "partida": {
+    "id": 1,
+    "jogador": "Erik",
+    "categoria": "Linguagens",
+    "mascara": "____",
+    "letrasTentadas": [],
+    "vidasRestantes": 5,
+    "status": "em_andamento",
+    "pontos": 0,
+    "palavra": null
+  },
+  "dica": "Linguagem que utiliza uma máquina virtual chamada JVM."
+}
+```
+
+Cada partida permite uma dica, com custo de uma vida.
+A utilização é registrada no SQLite.
+
+O custo reduz as vidas consideradas na pontuação final.
+Se consumir a última vida, a partida termina em derrota,
+com zero pontos e a palavra revelada.
+
+### Erros
+
+| Status | Quando acontece |
+|---|---|
+| 400 | Corpo com JSON inválido |
+| 404 | ID inválido ou partida inexistente |
+| 409 | Partida encerrada |
+| 409 | Dica já utilizada |
+| 409 | Palavra sem dica cadastrada |
+| 500 | Falha interna |
+
+Solicitações rejeitadas preservam as vidas e o estado da partida.
+
+## Consultar ranking
+
+Método GET no caminho /api/ranking.
+
+Retorna até dez vitórias ordenadas pela maior pontuação.
 No empate, a partida encerrada primeiro aparece à frente.
 Se a pontuação e a data forem iguais, o menor ID fica primeiro.
 
@@ -193,7 +264,7 @@ Status 200 OK.
 
 A data usa o formato ISO 8601 em UTC.
 
-Se não houver vitórias, a resposta é:
+Quando não há vitórias:
 
 ```json
 []
@@ -203,15 +274,12 @@ Se não houver vitórias, a resposta é:
 
 | Status | Quando acontece |
 |---|---|
-| 500 | Falha interna ao consultar o ranking |
+| 500 | Falha interna |
 
 ## Palavra secreta
 
-Enquanto o status for `em_andamento`, o campo `palavra`
-é `null`. A interface recebe a máscara para mostrar o progresso.
+Enquanto o status for em_andamento, o campo palavra é null.
+A interface usa mascara para mostrar o progresso.
 
 A palavra completa é enviada quando a partida termina,
-com status `vitoria` ou `derrota`.
-
-Os IDs, as palavras sorteadas e as datas apresentados neste
-documento são exemplos.
+com status vitoria ou derrota.
